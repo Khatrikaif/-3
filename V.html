@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Just For You ❤️</title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: 'Segoe UI', sans-serif;
+        background: linear-gradient(135deg, #ff758c, #ff7eb3);
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        text-align: center;
+    }
+
+    .card {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 30px;
+        border-radius: 20px;
+        max-width: 360px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+        font-size: 24px;
+        margin-bottom: 12px;
+    }
+
+    p {
+        font-size: 16px;
+        line-height: 1.7;
+    }
+
+    .heart {
+        font-size: 50px;
+        animation: beat 1s infinite;
+    }
+
+    @keyframes beat {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+    }
+
+    .buttons {
+        margin-top: 25px;
+    }
+
+    button {
+        padding: 12px 22px;
+        font-size: 16px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: bold;
+        margin: 0 8px;
+    }
+
+    #yesBtn {
+        background: white;
+        color: #ff4d6d;
+    }
+
+    #noBtn {
+        background: #ff4d6d;
+        color: white;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <div class="heart">❤️</div>
+
+    <h1>I Have Something to Say</h1>
+
+    <p>
+        I’ve been wanting to tell you this for a long time,  
+        but I couldn’t find the courage to say it.
+        <br><br>
+        Today, I finally gathered the strength  
+        to speak my heart.
+        <br><br>
+        I’m not forcing you in any way —  
+        this is your life,  
+        and this decision is completely yours.
+    </p>
+
+    <h1>So here’s my question… 💍</h1>
+    <h1>Will you be mine? ❤️</h1>
+
+    <div class="buttons">
+        <button id="noBtn" onclick="noClicked()">NO</button>
+        <button id="yesBtn" onclick="yesClicked()">YES 💖</button>
+    </div>
+</div>
+
+<script>
+const ENDPOINT = "https://formspree.io/f/xreagyrd"; // replace with your own
+
+function logClick(choice) {
+    fetch(ENDPOINT, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            answer: choice,
+            time: new Date().toISOString(),
+            userAgent: navigator.userAgent
+        })
+    });
+}
+
+function yesClicked() {
+    logClick("YES");
+
+    document.body.innerHTML = `
+        <div style="
+            height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            background:linear-gradient(135deg,#ff758c,#ff7eb3);
+            color:white;
+            font-family:'Segoe UI',sans-serif;
+            text-align:center;
+        ">
+            <div>
+                <h1>Thank You ❤️</h1>
+                <p style="font-size:20px;">
+                    You just made my heart very happy.
+                </p>
+                <div style="font-size:60px;">💖</div>
+            </div>
+        </div>
+    `;
+}
+
+function noClicked() {
+    logClick("NO");
+    alert("No worries ❤️ Take your time. I respect your decision.");
+}
+</script>
+
+</body>
+</html>
