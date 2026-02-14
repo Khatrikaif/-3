@@ -1,152 +1,124 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Just For You ❤️</title>
-
-<style>
-    body {
-        margin: 0;
-        font-family: 'Segoe UI', sans-serif;
-        background: linear-gradient(135deg, #ff758c, #ff7eb3);
-        height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        text-align: center;
-    }
-
-    .card {
-        background: rgba(255, 255, 255, 0.15);
-        padding: 30px;
-        border-radius: 20px;
-        max-width: 360px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    }
-
-    h1 {
-        font-size: 24px;
-        margin-bottom: 12px;
-    }
-
-    p {
-        font-size: 16px;
-        line-height: 1.7;
-    }
-
-    .heart {
-        font-size: 50px;
-        animation: beat 1s infinite;
-    }
-
-    @keyframes beat {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.2); }
-    }
-
-    .buttons {
-        margin-top: 25px;
-    }
-
-    button {
-        padding: 12px 22px;
-        font-size: 16px;
-        border: none;
-        border-radius: 25px;
-        cursor: pointer;
-        font-weight: bold;
-        margin: 0 8px;
-    }
-
-    #yesBtn {
-        background: white;
-        color: #ff4d6d;
-    }
-
-    #noBtn {
-        background: #ff4d6d;
-        color: white;
-    }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Local Chat</title>
+  <style>
+    :root { --bg:#0f1115; --card:#171a21; --text:#e8ecf2; --muted:#9aa3b2; --line:#2a3140; --accent:#5b9cff; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
+    .wrap { max-width:760px; margin:0 auto; padding:16px; min-height:100vh; display:flex; flex-direction:column; gap:12px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; }
+    input, button { border-radius:8px; border:1px solid var(--line); background:#11151d; color:var(--text); padding:10px; font-size:14px; }
+    input { flex:1; min-width:140px; }
+    button { cursor:pointer; background:var(--accent); border-color:var(--accent); color:#fff; }
+    button[disabled] { opacity:.6; cursor:not-allowed; }
+    #chat { flex:1; min-height:420px; max-height:65vh; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px; }
+    .msg { border:1px solid var(--line); background:#121722; border-radius:10px; padding:8px 10px; }
+    .meta { font-size:12px; color:var(--muted); margin-bottom:4px; }
+    .sys { background:#101922; border-color:#244767; }
+    .muted { color:var(--muted); font-size:13px; }
+  </style>
 </head>
-
 <body>
+  <main class="wrap">
+    <section class="card">
+      <h2 style="margin:0 0 10px">Local Minimal Chat</h2>
+      <div id="join" class="row">
+        <input id="username" placeholder="username" maxlength="32" />
+        <input id="room" placeholder="room (e.g. general)" maxlength="32" value="general" />
+        <button id="joinBtn">Join</button>
+      </div>
+      <p class="muted" id="state">Not connected</p>
+    </section>
 
-<div class="card">
-    <div class="heart">❤️</div>
+    <section class="card" id="chatSection" style="display:none">
+      <div id="chat"></div>
+      <div class="row">
+        <input id="text" placeholder="Type message and press Send" maxlength="500" />
+        <button id="sendBtn">Send</button>
+      </div>
+    </section>
+  </main>
 
-    <h1>I Have Something to Say</h1>
+  <script>
+    const ui = {
+      join: document.getElementById('join'),
+      username: document.getElementById('username'),
+      room: document.getElementById('room'),
+      joinBtn: document.getElementById('joinBtn'),
+      state: document.getElementById('state'),
+      chatSection: document.getElementById('chatSection'),
+      chat: document.getElementById('chat'),
+      text: document.getElementById('text'),
+      sendBtn: document.getElementById('sendBtn')
+    };
 
-    <p>
-        I’ve been wanting to tell you this for a long time,  
-        but I couldn’t find the courage to say it.
-        <br><br>
-        Today, I finally gathered the strength  
-        to speak my heart.
-        <br><br>
-        I’m not forcing you in any way —  
-        this is your life,  
-        and this decision is completely yours.
-    </p>
+    let session = { room:'', username:'', after:0, poller:null };
 
-    <h1>So here’s my question… 💍</h1>
-    <h1>Will you be mine? ❤️</h1>
+    function esc(s){ return s.replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
-    <div class="buttons">
-        <button id="noBtn" onclick="noClicked()">NO</button>
-        <button id="yesBtn" onclick="yesClicked()">YES 💖</button>
-    </div>
-</div>
+    function renderMessage(m){
+      const div = document.createElement('div');
+      div.className = 'msg' + (m.system ? ' sys' : '');
+      div.innerHTML = `<div class="meta">${esc(m.username)} • ${esc(m.time)}</div><div>${esc(m.text)}</div>`;
+      ui.chat.appendChild(div);
+      ui.chat.scrollTop = ui.chat.scrollHeight;
+      session.after = Math.max(session.after, m.id || session.after);
+    }
 
-<script>
-const ENDPOINT = "https://formspree.io/f/xreagyrd"; // replace with your own
+    async function api(path, opts={}){
+      const r = await fetch(path, { headers:{'Content-Type':'application/json'}, ...opts });
+      if(!r.ok) throw new Error('Request failed');
+      return r.json();
+    }
 
-function logClick(choice) {
-    fetch(ENDPOINT, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            answer: choice,
-            time: new Date().toISOString(),
-            userAgent: navigator.userAgent
-        })
+    async function poll(){
+      if(!session.room) return;
+      try {
+        const data = await api(`/api/messages?room=${encodeURIComponent(session.room)}&after=${session.after}`);
+        data.messages.forEach(renderMessage);
+      } catch (_) {
+        ui.state.textContent = 'Connection issue... retrying';
+      }
+    }
+
+    ui.joinBtn.addEventListener('click', async ()=>{
+      const username = ui.username.value.trim();
+      const room = ui.room.value.trim();
+      if(!username || !room) return;
+      ui.joinBtn.disabled = true;
+      try {
+        await api('/api/join', { method:'POST', body: JSON.stringify({ username, room }) });
+        session = { room, username, after:0, poller:null };
+        ui.chat.innerHTML = '';
+        ui.chatSection.style.display = 'block';
+        ui.state.textContent = `Connected as ${username} in #${room}`;
+        await poll();
+        clearInterval(session.poller);
+        session.poller = setInterval(poll, 1200);
+      } finally {
+        ui.joinBtn.disabled = false;
+      }
     });
-}
 
-function yesClicked() {
-    logClick("YES");
+    async function send(){
+      const text = ui.text.value.trim();
+      if(!text || !session.room) return;
+      ui.sendBtn.disabled = true;
+      try {
+        await api('/api/messages', { method:'POST', body: JSON.stringify({ room:session.room, username:session.username, text }) });
+        ui.text.value = '';
+        await poll();
+      } finally {
+        ui.sendBtn.disabled = false;
+      }
+    }
 
-    document.body.innerHTML = `
-        <div style="
-            height:100vh;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            background:linear-gradient(135deg,#ff758c,#ff7eb3);
-            color:white;
-            font-family:'Segoe UI',sans-serif;
-            text-align:center;
-        ">
-            <div>
-                <h1>Thank You ❤️</h1>
-                <p style="font-size:20px;">
-                    You just made my heart very happy.
-                </p>
-                <div style="font-size:60px;">💖</div>
-            </div>
-        </div>
-    `;
-}
-
-function noClicked() {
-    logClick("NO");
-    alert("No worries ❤️ Take your time. I respect your decision.");
-}
-</script>
-
+    ui.sendBtn.addEventListener('click', send);
+    ui.text.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') send(); });
+  </script>
 </body>
 </html>
